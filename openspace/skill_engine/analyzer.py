@@ -76,13 +76,20 @@ def _correct_skill_ids(
             continue
 
         # Extract name prefix (everything before the first "__")
-        prefix = raw_id.split("__")[0] if "__" in raw_id else ""
+        prefix = raw_id.split("__")[0] if "__" in raw_id else raw_id
 
-        # Candidates: known IDs sharing the same name prefix
-        candidates = [
+        # If the LLM returned only the base skill name, expand it to the
+        # unique full skill_id when possible.
+        exact_prefix_matches = [
             k for k in known_ids
             if prefix and k.split("__")[0] == prefix
         ]
+        if "__" not in raw_id and len(exact_prefix_matches) == 1:
+            corrected.append(exact_prefix_matches[0])
+            continue
+
+        # Candidates: known IDs sharing the same name prefix
+        candidates = exact_prefix_matches
 
         # Adaptive threshold: tighten when many candidates share the prefix
         max_dist = 2 if len(candidates) > 20 else 4  # ≤1 or ≤3
